@@ -1,0 +1,70 @@
+.section .data
+
+input_number:	    .asciz	"Please enter a number: "
+input_spec:	        .asciz	"%d"
+print_num:	            .asciz	" %d \n"
+error:			.asciz "Please input a positive number \n"
+
+.section .text
+
+.global main
+
+main:
+# create room on stack for n
+    sub sp, sp, 8
+    # input n prompt
+    ldr x0, = input_number
+    bl printf	
+    # get input n value
+    # spec input
+    ldr x0, = input_spec
+    mov x1, sp
+    bl scanf
+    ldr x3, [sp]
+
+
+# add code and other labels here
+   
+printFun:
+	# check if n = 0, n is in x3
+	cbz x3, ret0
+	# check if n < 0, n is in x3
+	subs x9, x3, XZR
+	b.gt endif
+	ldr x0, = error
+	bl printf
+	# else, recursively call the function again
+
+endif:
+
+	# creates a stack frame before the call to printFun
+	# needs x0, x1, frame pointer, and return address
+	sub sp, sp, #32
+	stur x0, [sp, #24]
+	stur x1, [sp, #16]
+	stur x29, [sp, #8]
+	stur x30, [sp, #0]
+	# call printFun
+	BL printFun
+	# restore the stack
+	ldur x0, [sp, #24]
+	ldur x1, [sp, #16]
+	ldur x29, [sp, #8]
+	ldur x30, [sp, #0]
+	add sp, sp, #32
+
+ret0:
+	mov x1, x3
+    ldr x0, = print_num
+	bl printf
+    mov x2, x3
+	B ret
+ret:
+	BR x30 
+
+# branch to this label on program completion
+exit:
+	mov x0, 0
+	mov x8, 93
+	svc 0
+	ret
