@@ -10,7 +10,7 @@ error:			.asciz "Please input a positive number \n"
 .global main
 
 main:
-# create room on stack for n
+	# create room on stack for n
     sub sp, sp, 8
     # input n prompt
     ldr x0, = input_number
@@ -20,47 +20,92 @@ main:
     ldr x0, = input_spec
     mov x1, sp
     bl scanf
-    ldr x3, [sp]
 
+after:
+	# save value from stack
+    ldrsw x10, [sp]
+	# restore stack
+	add sp, sp, 8
+	# move into argument
+	mov x1, x10
+	# call recursive function
+	bl printFun
+	# exit function on completion
+	b exit
 
-# add code and other labels here
-   
 printFun:
-	# check if n = 0, n is in x3
-	cbz x3, ret0
-	# check if n < 0, n is in x3
-	subs x9, x3, XZR
-	b.gt endif
-	ldr x0, = error
-	bl printf
-	# else, recursively call the function again
+	# check if n = 0, n is in x1
+	cbz x1, ret0
+	# check if n > 0, n is in x1
+	cmp x1, #0
+	b.gt recursive
+	# otherwise, print error
+	b retError
 
-endif:
-
-	# creates a stack frame before the call to printFun
-	# needs x0, x1, frame pointer, and return address
-	sub sp, sp, #32
-	stur x0, [sp, #24]
-	stur x1, [sp, #16]
-	stur x29, [sp, #8]
-	stur x30, [sp, #0]
-	# call printFun
-	BL printFun
-	# restore the stack
-	ldur x0, [sp, #24]
-	ldur x1, [sp, #16]
-	ldur x29, [sp, #8]
-	ldur x30, [sp, #0]
-	add sp, sp, #32
-
-ret0:
-	mov x1, x3
+recursive:
+	# creates a stack frame before the call to printFun and printf
+	# stack frame for first print
+	sub sp, sp, #16
+	stur x30, [sp, #8]
+	stur x1, [sp, #0]
+	# print n before call
     ldr x0, = print_num
 	bl printf
-    mov x2, x3
-	B ret
-ret:
-	BR x30 
+	# restore the stack
+	ldur x1, [sp, #0]
+	ldur x30, [sp, #8]
+	add sp, sp, #16
+	# stack frame for recursive call
+	sub sp, sp, #16
+	stur x30, [sp, #8]
+	stur x1, [sp, #0]
+	# argument for function is n - 1
+	sub x1, x1, #1
+	# call printFun
+	bl printFun
+	# restore the stack
+	ldur x1, [sp, #0]
+	ldur x30, [sp, #8]
+	add sp, sp, #16
+	# stack frame for second print
+	sub sp, sp, #16
+	stur x30, [sp, #8]
+	stur x1, [sp, #0]
+	# print n after call
+    ldr x0, = print_num
+	bl printf
+	# restore the stack
+	ldur x1, [sp, #0]
+	ldur x30, [sp, #8]
+	add sp, sp, #16
+	# return
+	br x30
+
+retError:
+	# print error message
+	ldr x0, = error
+	bl printf
+	# exit program
+	b exit
+
+ret0:
+	# create stack frame for print 
+	sub sp, sp, #16
+	stur x30, [sp, #8]
+	stur x1, [sp, #0]
+	# print zero
+	ldr x0, = print_num
+	bl printf
+	# restore the stack
+	ldur x1, [sp, #0]
+	ldur x30, [sp, #8]
+	add sp, sp, #16
+	# return
+    br x30
+
+	
+
+	
 
 # branch to this label on program completion
 exit:
